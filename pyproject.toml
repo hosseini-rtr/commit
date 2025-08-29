@@ -1,0 +1,19 @@
+[project]
+name = "commit"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "django>=5.2.5",
+    "djangorestframework>=3.16.1",
+    "pillow>=11.3.0",
+]
+
+[dependency-groups]
+dev = [
+    "django-debug-toolbar>=6.0.0",
+]
+prod = [
+    "gunicorn>=23.0.0",
+]
