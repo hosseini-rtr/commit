@@ -1,0 +1,95 @@
+{% if user.is_authenticated %}
+<form method="POST" action="{% url 'posts:post' %}" enctype="multipart/form-data" class="post-form-content">
+  {% csrf_token %}
+  
+  <div class="form-group">
+    <textarea 
+      name="content" 
+      class="post-textarea" 
+      placeholder="What's happening?"
+      maxlength="280"
+      required
+    ></textarea>
+    <div class="d-flex justify-content-between align-items-center mt-2">
+      <small class="text-muted">
+        <span id="char-count">0</span>/280 characters
+      </small>
+    </div>
+  </div>
+
+  <div class="post-form-actions">
+    <div class="d-flex gap-2">
+      <div class="file-input-wrapper">
+        <input type="file" id="image-input" name="image" accept="image/*" class="file-input">
+        <label for="image-input" class="file-input-label">
+          <i class="bi bi-image"></i>
+          Add Image
+        </label>
+      </div>
+      <div id="image-preview" class="d-none">
+        <img id="preview-img" src="" alt="Preview" class="img-thumbnail" style="max-height: 100px;">
+        <button type="button" id="remove-image" class="btn btn-sm btn-outline-danger ms-2">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+    </div>
+    
+    <button type="submit" class="post-submit-btn">
+      <i class="bi bi-send me-2"></i>
+      Post
+    </button>
+  </div>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const textarea = document.querySelector('.post-textarea');
+  const charCount = document.getElementById('char-count');
+  const imageInput = document.getElementById('image-input');
+  const imagePreview = document.getElementById('image-preview');
+  const previewImg = document.getElementById('preview-img');
+  const removeImageBtn = document.getElementById('remove-image');
+  const submitBtn = document.querySelector('.post-submit-btn');
+
+  // Character counter
+  textarea.addEventListener('input', function() {
+    const count = this.value.length;
+    charCount.textContent = count;
+    
+    if (count > 250) {
+      charCount.style.color = '#e0245e';
+    } else if (count > 200) {
+      charCount.style.color = '#fadc44';
+    } else {
+      charCount.style.color = '#657786';
+    }
+  });
+
+  // Image preview
+  imageInput.addEventListener('change', function() {
+    const file = this.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        previewImg.src = e.target.result;
+        imagePreview.classList.remove('d-none');
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  // Remove image
+  removeImageBtn.addEventListener('click', function() {
+    imageInput.value = '';
+    imagePreview.classList.add('d-none');
+    previewImg.src = '';
+  });
+
+  // Form submission
+  document.querySelector('.post-form-content').addEventListener('submit', function() {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Posting...';
+  });
+});
+</script>
+{% endif %}

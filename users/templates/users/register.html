@@ -1,0 +1,52 @@
+{% extends "posts/layout.html" %}
+
+{% block body %}
+<div class="auth-container">
+  <h2 class="auth-title">
+    <i class="bi bi-person-plus me-2"></i>
+    Register
+  </h2>
+
+  {% if message %}
+    <div class="alert alert-danger" role="alert">
+      <i class="bi bi-exclamation-triangle me-2"></i>
+      {{ message }}
+    </div>
+  {% endif %}
+
+  <form action="{% url 'users:register' %}" method="post">
+    {% csrf_token %}
+    <div class="form-group">
+      <label for="username" class="form-label">Username</label>
+      <input autofocus class="form-control" type="text" name="username" id="username" placeholder="Choose a username" required>
+    </div>
+    <div class="form-group">
+      <label for="email" class="form-label">Email Address</label>
+      <input class="form-control" type="email" name="email" id="email" placeholder="Enter your email" required>
+    </div>
+    <div class="form-group">
+      <label for="password" class="form-label">Password</label>
+      <input class="form-control" type="password" name="password" id="password" placeholder="Create a password" required>
+    </div>
+    <div class="form-group">
+      <label for="confirmation" class="form-label">Confirm Password</label>
+      <input class="form-control" type="password" name="confirmation" id="confirmation" placeholder="Confirm your password" required>
+    </div>
+    <div class="d-grid">
+      <button class="btn btn-primary" type="submit">
+        <i class="bi bi-person-plus me-2"></i>
+        Register
+      </button>
+    </div>
+  </form>
+
+  <div class="text-center mt-4">
+    <p class="text-muted mb-0">
+      Already have an account? 
+      <a href="{% url 'users:login' %}" class="text-decoration-none">
+        <strong>Log In here</strong>
+      </a>
+    </p>
+  </div>
+</div>
+{% endblock %}

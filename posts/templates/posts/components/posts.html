@@ -1,0 +1,209 @@
+{% load static %}
+
+<script>
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length == 2) return parts.pop().split(";").shift();
+}
+
+function handleEditPost(id) {
+  const textareaValue = document.getElementById(`textarea_${id}`)?.value;
+
+  fetch(`/edit_post/${id}/`, {
+    method: "POST",
+    headers: {
+      "Content-type": "application/json",
+      "X-CSRFToken": getCookie("csrftoken"),
+    },
+    body: JSON.stringify({
+      content: textareaValue,
+    }),
+  })
+    .then((res) => res.json())
+    .then((result) => {
+      console.log("result: ", result);
+      document.getElementById(`post_content_${id}`).innerHTML = result.data;
+      const modal = bootstrap.Modal.getInstance(document.getElementById(`modal_edit_post_${id}`));
+      modal.hide();
+    })
+    .catch((err) => {
+      console.log("error call service for edit post: ", err);
+    });
+}
+
+function likeHandler(id, user_liked_id) {
+  const icons = document.getElementsByClassName(`bi-heart-${id}`);
+  const likeButton = document.querySelector(`[data-post-id="${id}"]`);
+
+  fetch(`/like/${id}/`)
+    .then((res) => res.json())
+    .then((result) => {
+      console.log('likeHandler', result);
+      if (result.success) {
+        const action = result.action;
+        const nums_place = document.getElementById(`likes-count-${id}`);
+        const nums_likes = parseInt(nums_place.getAttribute('value'));
+
+        for (const icon of icons) {
+          if (action === "Liked") {
+            icon.classList.add('text-danger');
+            likeButton.classList.add('liked');
+            nums_place.setAttribute('value', nums_likes + 1);
+            nums_place.innerHTML = `<span class="action-count">${nums_likes + 1}</span>`;
+          } else {
+            nums_place.setAttribute('value', nums_likes - 1);
+            nums_place.innerHTML = `<span class="action-count">${nums_likes - 1}</span>`;
+            icon.classList.remove('text-danger');
+            likeButton.classList.remove('liked');
+          }
+        }
+      }
+    })
+    .catch((error) => {
+      console.error("Error handling like:", error);
+    });
+}
+</script>
+
+<div class="post-card">
+  <!-- Post Header -->
+  <div class="post-header">
+    <img src="{% static 'social_network/profile.png' %}" alt="Profile" class="post-avatar">
+    <div class="flex-grow-1">
+      <div class="d-flex align-items-center mb-1">
+        <a href="{% url 'users:profile' post.author.username %}" class="post-author">
+          @{{ post.author.username }}
+        </a>
+        <span class="post-date">• {{ post.date|timesince }} ago</span>
+      </div>
+      
+      <!-- Edit Button for Post Author -->
+      {% if user.is_authenticated and user == post.author %}
+      <div class="dropdown">
+        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+          <i class="bi bi-three-dots"></i>
+        </button>
+        <ul class="dropdown-menu">
+          <li>
+            <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modal_edit_post_{{ post.id }}">
+              <i class="bi bi-pencil me-2"></i>
+              Edit Post
+            </button>
+          </li>
+        </ul>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Post Content -->
+  <div class="post-content" id="post_content_{{ post.id }}">
+    {{ post.content }}
+  </div>
+
+  <!-- Post Image -->
+  {% if post.image_cover %}
+  <div class="post-image-container">
+    <img src="/media/{{ post.image_cover }}" alt="{{ post.content }}" class="post-image">
+  </div>
+  {% endif %}
+
+  <!-- Post Actions -->
+  <div class="post-actions">
+    <div class="d-flex justify-content-between align-items-center w-100">
+      <!-- Comments -->
+      <button class="action-button">
+        <i class="bi bi-chat-left-dots"></i>
+        <span class="action-count">0</span>
+      </button>
+
+      <!-- Retweets -->
+      <button class="action-button">
+        <i class="bi bi-arrow-repeat"></i>
+        <span class="action-count">0</span>
+      </button>
+
+      <!-- Likes -->
+      <button 
+        class="action-button {% if post.id in user_liked_id %}liked{% endif %}" 
+        data-post-id="{{ post.id }}"
+        onclick="likeHandler({{ post.id }}, {{ user_liked_id }})"
+      >
+        <i class="bi bi-heart bi-heart-{{ post.id }} {% if post.id in user_liked_id %}text-danger{% endif %}"></i>
+        <span class="action-count" id="likes-count-{{ post.id }}" value="{{ post.num_likes }}">
+          {{ post.num_likes }}
+        </span>
+      </button>
+
+      <!-- Share -->
+      <button class="action-button">
+        <i class="bi bi-share"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Post Modal -->
+{% if user.is_authenticated and user == post.author %}
+<div class="modal fade" id="modal_edit_post_{{ post.id }}" tabindex="-1" aria-labelledby="modal_edit_post_{{ post.id }}_label" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modal_edit_post_{{ post.id }}_label">
+          <i class="bi bi-pencil-square me-2"></i>
+          Edit Post
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <textarea 
+          rows="6" 
+          id="textarea_{{ post.id }}" 
+          class="form-control" 
+          name="content"
+          maxlength="280"
+        >{{ post.content }}</textarea>
+        <div class="d-flex justify-content-between align-items-center mt-2">
+          <small class="text-muted">
+            <span id="char-count-{{ post.id }}">{{ post.content|length }}</span>/280 characters
+          </small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x me-2"></i>
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" onclick="handleEditPost({{ post.id }})">
+          <i class="bi bi-check me-2"></i>
+          Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Character counter for edit modal
+document.addEventListener('DOMContentLoaded', function() {
+  const textarea = document.getElementById(`textarea_{{ post.id }}`);
+  const charCount = document.getElementById(`char-count-{{ post.id }}`);
+  
+  if (textarea && charCount) {
+    textarea.addEventListener('input', function() {
+      const count = this.value.length;
+      charCount.textContent = count;
+      
+      if (count > 250) {
+        charCount.style.color = '#e0245e';
+      } else if (count > 200) {
+        charCount.style.color = '#fadc44';
+      } else {
+        charCount.style.color = '#657786';
+      }
+    });
+  }
+});
+</script>
+{% endif %}
